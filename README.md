@@ -32,6 +32,21 @@ You should receive the message: `OK`
 ## Visualisation Web API commands
 **Dummy Server Check** : `http://localhost:6969/api` - dummy method that returns `OK` if the web browser is able to send a request to the visualisation server.
 
+**Set Map Center** : `http://localhost:6969/api/set/mapcenter/:lat/:lng` - sets the map center to a given latitude and longitude. As an example `http://localhost:6969/api/set/mapcenter/1/1`
+sets the map center to the coordinates `(1,1)`
+
+**Add Marker** : `http://localhost:6969/api/add/marker/:id/:color/:lat/:lng/:title` - adds a generic marker to the map: 
+* :id - is the id of the marker 
+* :color - is the color for the marker (for example #FE7569)
+* :lat - the latitude of the marker
+* :lng - the longitude of the marker
+* :title - a title or name for the marker
+
+**Add Worker** : `http://localhost:6969/api/add/worker/:id/:lat/:lng/:name` - adds a worker / vehicle marker to the map:
+* :id - is the id of the worker
+* :lat - worker latitude
+* :lng - worker longitude
+* :name - a textual name for the worker
 
 # Licence
 Vehicle Routing Visualisation
