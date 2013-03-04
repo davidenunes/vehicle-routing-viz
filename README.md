@@ -29,7 +29,7 @@ To test the visualisation API you don't need a particular application. Just Open
 
 You should receive the message: `OK`
 
-## Visualisation Web API commands
+## Visualisation Web API
 **Note** : note that the address `localhost` and the port `6969` are values for the host and port that should be used if you 
 are just running the application locally you can obviously change these values based on the machine running the visualisation server 
 and the port you set in the `routing_server.js` file.
