@@ -1,0 +1,544 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <style type="text/css">
+      html { height: 100% }
+      body { height: 100%; margin: 0; padding: 0 }
+      
+      #map_canvas { height: 500px; width: 900px; margin:0px auto; margin-top:100px}
+      
+      
+      
+    </style>
+	<!-- This is needed to connect to the visualisation server via web sockets -->
+	<script src="http://localhost:6969/socket.io/socket.io.js"></script>
+	
+	
+	<!-- Google Maps -->
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD-0RCzDvhSLU8nGp9-ESQ1V7OG3Q-qMhQ&sensor=false"></script>
+    
+    <script type ="text/javascript" src="v3_epoly.js"></script>
+    
+    
+    
+    
+    
+    
+    <script type="text/javascript">
+	
+		//<key, value> data structure to store the markers and routes
+		var Collection = function(){
+			//attributes
+			this.count = 0;
+			this.collection = {};
+
+			//methods
+			
+			//add
+			this.add = function(key,item)
+			{
+				if(this.collection[key]!=undefined)
+					return undefined;
+				this.collection[key]=item;
+				return ++this.count;
+			}
+			
+			//remove
+			this.remove=function(key)
+			{
+				if(this.collection[key]==undefined)
+					return undefined;
+				delete this.collection[key]
+				return --this.count	
+			}	
+			
+			//get
+			this.get=function(key)
+			{
+				return this.collection[key];
+			}
+			
+		}
+	
+		//global variables
+		var map;
+		//stores general purpose markers
+		var markers = new Collection();
+		//stores the job markers
+		var jobs = new Collection();
+		//stores the depot markers
+		var depots = new Collection();
+		//stores the routes, each route also has a polyline associated with it
+		var routes = new Collection();
+		//stores the worker markers
+		var workers = new Collection();
+
+		//used to call the directions service and create routes
+		var directionsService = new google.maps.DirectionsService();
+		var rendererOptions = {
+			map: map
+		}
+			
+		var timerHandle = null;
+		var currentRoute;
+		
+	
+		//creates and renders the map
+		function initialize() {
+			var mapOptions = {
+				center: new google.maps.LatLng(39, -9),
+				zoom: 7,
+				mapTypeId: google.maps.MapTypeId.ROADMAP
+			};
+			map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+		}
+	  
+		//clears all the markers and routes from the map
+	    	function clearMap(){
+			for(var r in routes.collection){
+				var route = routes.collection[r];
+				route.setMap(null);
+				route.polyline.setMap(null);
+			}
+			
+			
+			for(var w in workers.collection){
+				var worker = workers.collection[w];
+				worker.setMap(null);
+			}
+			
+			for(var d in depots.collection){
+				var depot = depots.collection[d];
+				depot.setMap(null);
+			}
+			
+			for(var j in jobs.collection){
+				var job = jobs.collection[j];
+				job.setMap(null);
+			}
+			
+			markers = new Collection();
+			jobs = new Collection();
+			depots = new Collection();
+			routes = new Collection();
+			workers = new Collection();
+		
+		
+		}
+	  
+	  
+	  
+	  
+		//sets the map center
+		function setMapCenter(lati, longi){
+			map.setCenter(new google.maps.LatLng(lati, longi));
+		}
+	  
+		//sets the map zoom
+		function setMapZoom(zoom){
+			map.setZoom(zoom);
+		}
+		
+		//moves a worker along a route
+		function moveWorker(workerID, routeID, distance){
+			var currentRoute = routes.get(routeID);
+			var currentWorker = workers.get(workerID);
+			
+			//gets the polyline created when the route was 
+			//added to move a certain distance along the route
+			var line = currentRoute.polyline;
+			
+			//gets the point moving a distance along the route
+			var newP = line.GetPointAtDistance(distance);
+			
+			currentWorker.setPosition(newP);
+			return newP;
+		}
+		
+		//sets a worker marker position
+		function setWorkerPosition(id, lat, lng){
+			var currentWorker = workers.get(id);
+			var myLatLng  = new google.maps.LatLng(lat,lng);
+			currentWorker.setPosition(myLatLng);
+		
+		}
+	  
+		// adds a general purpose marker to the map
+		// id: marker id
+		// color: hex colour; ex: FF45AB
+		// lati: latitude
+		// longi: longitude
+		// title: name of the marker
+		function addMarker(id, color, lati, longi, title){
+
+			//create the marker icon
+			var icon = new google.maps.MarkerImage('http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=%E2%80%A2|' + color , 
+				new google.maps.Size(21, 34), 
+				new google.maps.Point(0,0), 
+				new google.maps.Point(10, 34));
+
+			//create the marker
+			var marker = new google.maps.Marker({
+				position: new google.maps.LatLng(lati, longi),
+				map: map,
+				icon: icon,
+				title: title});
+			
+			//add the marker to the markers collections
+			markers.add(id, marker);
+		}
+		
+		//adds a job marker to the map
+		function addJob(id, lat, lng, name){
+			//create a job marker 
+		        var icon = new google.maps.MarkerImage('./markers/job_waiting.png', 
+				new google.maps.Size(34, 34), 
+				new google.maps.Point(0,0), 
+				new google.maps.Point(10, 34));
+      
+			
+			var myLatLng  = new google.maps.LatLng(lat,lng);
+			var job = new google.maps.Marker({
+			    position: myLatLng,
+			    map: map,
+			    icon: icon
+			});
+   
+		      jobs.add(id,job);
+		
+		}
+		
+		//add depot marker to the map
+		function addDepot(id, lat, lng, name){
+		        var icon = new google.maps.MarkerImage('./markers/depot.png', 
+				new google.maps.Size(40, 40), 
+				new google.maps.Point(0,0), 
+				new google.maps.Point(5, 34));
+			
+			var myLatLng  = new google.maps.LatLng(lat,lng);
+			var depot = new google.maps.Marker({
+			    position: myLatLng,
+			    map: map,
+			    icon: icon
+			});
+   
+   
+		      depots.add(id,depot);	
+		}
+		
+		//removes a depot from the map
+		function removeDepot(id){
+		  depots.get(id).setMap(null);
+		  depots.remove(id);
+		}
+		
+		//removes a job from the map
+		function removeJob(id){
+		  jobs.get(id).setMap(null);
+		  jobs.remove(id);
+		}
+		
+		//changes the job marker icon to a job_done icon
+		function setJobDone(id){
+		     var icon = new google.maps.MarkerImage('./markers/job_done.png', 
+				new google.maps.Size(34, 34), 
+				new google.maps.Point(0,0), 
+				new google.maps.Point(10, 34));
+				
+			var currentJob = jobs.get(id);
+			
+			currentJob.setIcon(icon);
+		}
+		
+		//adds a worker marker to the map
+		function addWorker(id, lat, lng, name){
+		        var icon = new google.maps.MarkerImage('./markers/worker.png', 
+				new google.maps.Size(34, 34), 
+				new google.maps.Point(0,0), 
+				new google.maps.Point(10, 34));
+      
+      
+			//var myLatLng = new google.maps.LatLng(38.75609130, -9.15650370);
+			
+			var myLatLng  = new google.maps.LatLng(lat,lng);
+			var worker = new google.maps.Marker({
+			    position: myLatLng,
+			    map: map,
+			    icon: icon
+			});
+   
+		      workers.add(id,worker);
+		
+		}
+		//removes a previously added worker from the map
+		function removeWorker(id){
+		  if(workers.get(id) != undefined){
+			workers.get(id).setMap(null);
+			workers.remove(id);
+		  }
+		}
+		
+		
+	  
+		//removes a marker
+		function removeMarker(id){
+			markers.get(id).setMap(null);
+			markers.remove(id);
+		}
+	  
+	  
+		// Sets the marker visibility
+		// id: identificador do marcador
+		// bool: TRUE/FALSE se o marcador esta visivel ou invisivel respetivamente
+		function setMarkerVisible(id, bool){
+			markers.get(id).setVisible(bool);
+		}
+	  
+	  
+		// Creates a route between two coordinates
+		// example: createRoute(1,38.75609130,-9.15650370,38.757,-9.15651)
+		function createRoute(id, lati_ini, longi_ini, lati_fin, longi_fin){
+			
+ 			//use google maps directions API
+			var directionsDisplay = new google.maps.DirectionsRenderer(rendererOptions);
+			directionsDisplay.setMap(map);
+			directionsDisplay.suppressMarkers = true;
+			
+	
+			var request = {
+				origin: new google.maps.LatLng(lati_ini, longi_ini),
+				destination: new google.maps.LatLng(lati_fin, longi_fin),
+				travelMode: google.maps.DirectionsTravelMode.DRIVING
+			};
+			directionsService.route(request, function(response, status) {
+			  if (status == google.maps.DirectionsStatus.OK) {
+				directionsDisplay.setDirections(response);
+				routes.add(id, directionsDisplay);
+				//draws the Polyline for the route with the given ID
+				drawPolyline(id);
+				directionsDisplay.setMap(null);
+			  }else{
+				alert('Route Error: ' + status);
+			  }
+			});
+			
+			
+			
+			
+			
+		}
+		 
+		//draws a route on the map and draws a polyline over it
+		// the polyline can be later used to move a marker along a route
+		function drawPolyline(id){
+		  console.log(id);
+			if(routes.get(id))
+			    console.log('exists');
+			else
+			    console.log('DOH');
+			
+			//create polyline for route
+			
+			
+			
+			// Create a renderer for directions and bind it to the map.
+		      
+		      
+		       var polyline = new google.maps.Polyline({
+			    path: [],
+			    strokeColor: '#FF0000',
+			    strokeWeight: 4
+		       });
+		       
+			var polyline2 = new google.maps.Polyline({
+			    path: [],
+			    trokeColor: '#FF0000',
+			     strokeWeight: 4
+			});
+		    
+			var steps = [];
+		    
+			//gets the current route by id
+			var currentRoute = routes.get(id);
+			var bounds = new google.maps.LatLngBounds();
+			console.log(currentRoute);
+			var currentRouteDirections = currentRoute.directions;
+			startLocation = new Object();
+			endLocation = new Object();
+			var path = currentRouteDirections.routes[0].overview_path;
+			var legs = currentRouteDirections.routes[0].legs;
+			
+			
+			//creates a polyline for each of the route steps
+			for(var i = 0; i<legs.length; i++){
+			   endLocation.latlng = legs[i].end_location;
+			   endLocation.address = legs[i].end_address;
+			   var steps = legs[i].steps;
+			   for (j=0;j<steps.length;j++) {
+				var nextSegment = steps[j].path;
+				for (k=0;k<nextSegment.length;k++) {
+				    polyline.getPath().push(nextSegment[k]);
+				    bounds.extend(nextSegment[k]);
+				}
+			   }
+			}
+			
+			polyline.setMap(map);
+			currentRoute.polyline = polyline;
+			map.fitBounds(bounds);
+		
+		}
+		
+		//removes a route from the map
+		function removeRoute(id){
+			routes.get(id).setMap(null);
+			var route = route = routes.get(id);
+			route.polyline.setMap(null);
+			routes.remove(id);
+		}
+		
+		
+		
+	  
+	  
+	  
+    </script>
+	
+	
+	<!-- 
+	Defines a connection between the messages received from the 
+     	visualisation server and the actions performed on the Google Maps 
+        canvas    
+	-->
+	
+	<script>
+	//connect to the visualisation interface server
+	var socket = io.connect('http://localhost:6969');
+	
+	
+	//setMapCenter
+	socket.on('setMapCenter', function(lati, longi){
+		setMapCenter(lati, longi);
+	});
+	
+	//setMapZoom
+	socket.on('setMapZoom', function(zoom){
+		setMapZoom(zoom);
+	});
+	
+	//moves worker on a route
+	socket.on('moveWorker', function(workerID, routeID, distance){
+	  var point = moveWorker(workerID,routeID,distance);
+	  
+	  
+	});
+	
+	//sends the current worker position to the visualisation server
+	socket.on('getWorkerPosition', function(id){
+	    var worker = workers.get(id);
+	    var point = worker.getPosition();
+	    socket.emit('workerPosition', point.lat(), point.lng());
+	});
+	
+	//add generic marker
+	socket.on('addMarker', function(id, color, lati, longi, title){
+		addMarker(id, color, lati, longi, title);
+	});
+	
+	//add worker marker
+	socket.on('addWorker', function(id, lati, longi, name){
+		addWorker(id, lati, longi, name);
+	});
+	
+	//add job marker
+	socket.on('addJob', function(id, lati, longi, title){
+		addJob(id, lati, longi, title);
+	});
+	
+	//add depot marker
+	socket.on('addDepot', function(id, lati, longi, name){
+		addDepot(id, lati, longi, name);
+	});
+	
+	//remove depot marker
+	socket.on('removeDepot', function(id){
+	      removeDepot(id);
+	});
+	
+	//remove job marker
+	socket.on('removeJob', function(id){
+		removeJob(id);
+	});
+	
+	//set job as done (replaces marker)
+	socket.on('setJobDone', function(id){
+		setJobDone(id);
+	});
+	
+	//clears the map
+	socket.on('removeAll', function(id){
+		clearMap();
+	});
+	
+	//sets a worker marker position 
+	socket.on('setWorkerPosition', function(id, lat,lng){
+	      setWorkerPosition(id,lat,lng);
+	});
+	
+	
+	//remove worker marker
+	socket.on('removeWorker', function(id){
+		removeWorker(id);
+	});
+	
+	//set marker visibility
+	socket.on('setMarkerVisible', function(id, bool){
+		setMarkerVisible(id, bool);
+	});
+	
+	//create route 
+	socket.on('createRoute', function(id, lati_ini, longi_ini, lati_fin, longi_fin) {
+		createRoute(id, lati_ini, longi_ini, lati_fin, longi_fin);
+	});
+	
+	//remove route
+	socket.on('removeRoute', function(id){
+		removeRoute(id);
+	});
+	
+	
+	//conectado
+	socket.on('connection', function(sock) {
+		alert('Conectado ao servidor');
+	});
+	
+	//dummy method to test the connection
+	socket.on('message', function(msg) {
+		alert(msg);
+	});
+	
+	
+	</script>
+	
+
+	
+	
+  </head>
+  
+  
+
+<!-- Actual Page Body where the map is rendered -->
+<body onload="initialize()">
+	<div id="title">
+	  
+	</div>
+	<div id="map_canvas"></div>
+	<div id="test"></div>
+</body>
+
+
+
+
+</html>
