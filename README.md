@@ -29,6 +29,9 @@ To test the visualisation API you don't need a particular application. Just Open
 
 You should receive the message: `OK`
 
+## Visualisation Web API commands
+**Dummy Server Check** : `http://localhost:6969/api` - dummy method that returns `OK` if the web browser is able to send a request to the visualisation server.
+
 
 # Licence
 Vehicle Routing Visualisation
