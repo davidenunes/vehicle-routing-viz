@@ -30,6 +30,10 @@ To test the visualisation API you don't need a particular application. Just Open
 You should receive the message: `OK`
 
 ## Visualisation Web API commands
+**Note** : note that the address `localhost` and the port `6969` are values for the host and port that should be used if you 
+are just running the application locally you can obviously change these values based on the machine running the visualisation server 
+and the port you set in the `routing_server.js` file.
+
 **Dummy Server Check** : `http://localhost:6969/api` - dummy method that returns `OK` if the web browser is able to send a request to the visualisation server.
 
 **Set Map Center** : `http://localhost:6969/api/set/mapcenter/:lat/:lng` - sets the map center to a given latitude and longitude. As an example `http://localhost:6969/api/set/mapcenter/1/1`
@@ -47,6 +51,22 @@ sets the map center to the coordinates `(1,1)`
 * :lat - worker latitude
 * :lng - worker longitude
 * :name - a textual name for the worker
+
+**Add Job** : `http://localhost:6969/api/add/job/:id/:lat/:lng/:title` - adds a job marker to the map:
+* :id - is the id of the job
+* :lat - job latitude
+* :lng - job longitude
+* :title - a textual name or title for the job
+
+**Add Depot** : `http://localhost:6969/api/add/depot/:id/:lat/:lng/:title` - adds a depot / base marker to the map:
+* :id - is the id of the depot
+* :lat - depot latitude
+* :lng - depot longitude
+* :title - a textual name or title for the depot
+
+**Remove Depot** : `http://localhost:6969/api/remove/depot/:id` - removes a depot from the map based on its *id*:
+* :id - is the id of the depot
+
 
 # Licence
 Vehicle Routing Visualisation
