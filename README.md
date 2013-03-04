@@ -52,6 +52,11 @@ sets the map center to the coordinates `(1,1)`
 * :lng - worker longitude
 * :name - a textual name for the worker
 
+**Set Worker Position** : `http://localhost:6969/api/set/worker/position/:workerID/:lat/:lng` - sets the position of the given worker to a coordinate:
+* :workerID - worker id
+* :lat - new worker latitude
+* :lng - new worker longitude
+
 **Add Job** : `http://localhost:6969/api/add/job/:id/:lat/:lng/:title` - adds a job marker to the map:
 * :id - is the id of the job
 * :lat - job latitude
@@ -64,9 +69,43 @@ sets the map center to the coordinates `(1,1)`
 * :lng - depot longitude
 * :title - a textual name or title for the depot
 
-**Remove Depot** : `http://localhost:6969/api/remove/depot/:id` - removes a depot from the map based on its *id*:
-* :id - is the id of the depot
+**Add Route** : `http://localhost:6969/api/add/route/:id/:lat1/:lng1/:lat2/:lng2` - uses the Google Directions api to 
+add a route between two coordinates to the map:
+* :id - route id
+* :lat1 - route starting latitude
+* :lng1 - route starting longitude
+* :lat2 - route ending latitude
+* :lng2 - route ending longitude
 
+**Remove Route** : `http://localhost:6969/api/remove/route/:id` - removes a previously added route from the map:
+* :id - route id
+
+**Remove Depot** : `http://localhost:6969/api/remove/depot/:id` - removes a depot from the map based on its *id*:
+* :id - depot id
+
+**Remove Job** : `http://hocalhost:6969/api/remove/job/:id` - removes a previously added job from the map :
+* :id -  job id 
+
+**Remove Worker** : `http://localhost:6969/api/remove/worker/:id` - removes a previously added worker from the map:
+* :id -  worker id 
+
+**Complete Job** : `http://localhost:6969/api/set/job/done/:id` - sets an existing job as done (simply changes its marker in this case):
+* :id -  job id 
+
+**Clear the Map** : `http://localhost:6969/api/remove/all` - removes all the objects from the map.
+
+**Move Worker in a Route** : `http://localhost:6969/api/update/worker/position/:workerID/:routeID/:distance` - moves a worker in a route given a distance counting from the start of the route:
+* :workerID - worker id
+* :routeID - route id
+* :distance - a distance in meters counting from the start of the route
+
+**Get Worker Position** : `http://localhost:6969/api/get/worker/position/:workerID` - returns the current coordinates for the given worker:
+* :workerID - the id of the worker
+* response: `lat;lng`
+
+This is the only method in this demo that returns some kind of state for the map. It might be useful if one needs 
+to determine the actual coordinate of a Worker (for instance if this in the middle of an existing route and
+needs to be re-routed).
 
 # Licence
 Vehicle Routing Visualisation
