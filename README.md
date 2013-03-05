@@ -110,7 +110,7 @@ needs to be re-routed).
 # Licence
 Vehicle Routing Visualisation
 
-* Copyright (C) 2013 [LabMAg](http://labmag.ul.pt/)
+* Copyright (C) 2013  [Laboratory of Agent Modelling (LabMAg)](http://labmag.ul.pt/)
 * Authors : Davide Nunes davex.pt@gmail.com
 * Contributors: alphalinkman@gmail.com
 
