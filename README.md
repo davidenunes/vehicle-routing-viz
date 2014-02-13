@@ -14,6 +14,15 @@ existing routes.
 To run the visualisation server you need to install [Node.js](http://nodejs.org/). To install extra modules for *Node.js*
 (such as *Socket.io* and *Express*) you can use the [Node Package Modules](https://npmjs.org/).
 
+To do this, run 
+
+```bash
+npm install socket.io
+npm install express
+```
+
+after the node modules are installed you are ready to run the demo.
+
 To run this demo, you just need to execute the `routing_server.js` with node. This can be done as follows:
 
 ```bash
@@ -32,7 +41,8 @@ You should receive the message: `OK`
 ## Visualisation Web API
 **Note** : note that the address `localhost` and the port `6969` are values for the host and port that should be used if you 
 are just running the application locally you can obviously change these values based on the machine running the visualisation server 
-and the port you set in the `routing_server.js` file.
+and the port you set in the `routing_server.js` file. The visualisation client (routing_client.html) should be opened after you run routing_server.js as
+it will try to connect to the server.
 
 **Dummy Server Check** : `http://localhost:6969/api` - dummy method that returns `OK` if the web browser is able to send a request to the visualisation server.
 
@@ -112,7 +122,6 @@ Vehicle Routing Visualisation
 
 * Copyright (C) 2013  [Laboratory of Agent Modelling (LabMAg)](http://labmag.ul.pt/)
 * Authors : Davide Nunes davex.pt@gmail.com
-* Contributors: alphalinkman@gmail.com
 
 The Vehicle Routing Visualisation is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
