@@ -121,7 +121,7 @@ needs to be re-routed).
 Vehicle Routing Visualisation
 
 * Copyright (C) 2013  [Laboratory of Agent Modelling (LabMAg)](http://labmag.ul.pt/)
-* Authors : Davide Nunes davex.pt@gmail.com
+* Authors : [Davide Nunes](http://davidenunes.com) davidelnunes@gmail.com 
 
 The Vehicle Routing Visualisation is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
